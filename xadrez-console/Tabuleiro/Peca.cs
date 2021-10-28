@@ -20,6 +20,25 @@
         {
             QtdMovimentos++;
         }
+        public bool existeMovimentosPossiveis()
+        {
+            bool[,] mat = movimentosPossiveis();
+            for (int i = 0; i < Tab.Linhas; i++)
+            {
+                for (int j = 0; j < Tab.Colunas; j++)
+                {
+                    if (mat[i, j])//se for true
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        public bool podeMoverPara(Posicao pos)//método para melhorar legibilidade na partidaDeXadrez
+        {
+            return movimentosPossiveis()[pos.Linha, pos.Coluna];
+        }
         public abstract bool[,] movimentosPossiveis(); //metodo abstract pois superClasse Peca é muito generico e não pode ser implementado nessa classe
         
         
