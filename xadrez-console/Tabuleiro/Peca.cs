@@ -39,7 +39,7 @@
             }
             return false;
         }
-        public bool podeMoverPara(Posicao pos)//método para melhorar legibilidade na partidaDeXadrez
+        public bool movimentoPossivel(Posicao pos)//método para melhorar legibilidade na partidaDeXadrez
         {
             return movimentosPossiveis()[pos.Linha, pos.Coluna];
         }
