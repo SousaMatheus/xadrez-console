@@ -11,6 +11,7 @@ namespace xadrez
         public bool terminada { get; private set; }
         private HashSet<Peca> pecas;//conjunto do tipo peca
         private HashSet<Peca> capturadas;
+        public bool xeque { get; private set; }
 
         public PartidaDeXadrez()
         {
@@ -21,8 +22,9 @@ namespace xadrez
             capturadas = new HashSet<Peca>();
             colocarPecas();
             terminada = false;
+            xeque = false;
         }
-        public void executaMovimento(Posicao origem, Posicao destino)
+        public Peca executaMovimento(Posicao origem, Posicao destino)
         {
             Peca p = tab.retirarPeca(origem);
             p.incrementarQtdeMovimentos();
@@ -32,10 +34,36 @@ namespace xadrez
             {
                 capturadas.Add(pecaCapturada);//add no conjunto
             }
+            return pecaCapturada;
+        }
+        public void desfazMovimento(Posicao origem, Posicao destino, Peca pecaCapturada)
+        {
+            Peca p = tab.retirarPeca(destino);
+            p.decrementarQtdeMovimentos();
+            if (pecaCapturada != null)
+            {
+                tab.colocarPeca(pecaCapturada, destino); // volta peça capturada no destino
+                capturadas.Remove(pecaCapturada); // remove das peças capturadas
+            }
+            tab.colocarPeca(p, origem);
         }
         public void realizaJogada(Posicao origem, Posicao destino)
         {
-            executaMovimento(origem, destino);
+            //não pode executar movimento que te deixe em xeque
+            Peca pecaCapturada =  executaMovimento(origem, destino);
+            if (estaEmXeque(jogadorAtual))
+            {
+                desfazMovimento(origem, destino, pecaCapturada);
+                throw new TabuleiroException("Você não pode se colocar em xeque!");
+            }
+            if (estaEmXeque(adversaria(jogadorAtual)))  
+            {
+                xeque = true;
+            }
+            else
+            {
+                xeque = false;
+            }
             turno++;
             mudaJogador();
         }
@@ -76,11 +104,11 @@ namespace xadrez
         public HashSet<Peca> pecasCapturadas(Cor cor)//quem são as pecas de acordo com a cor
         {
             HashSet<Peca> aux = new HashSet<Peca>();
-            foreach (Peca peca in capturadas)
+            foreach (Peca x in capturadas)
             {
-                if (peca.Cor == cor)
+                if (x.Cor == cor)
                 {
-                    aux.Add(peca);
+                    aux.Add(x);
                 }
             }
             return aux;
@@ -89,17 +117,59 @@ namespace xadrez
         public HashSet<Peca> pecasEmJogo(Cor cor)//quem são as pecas em jogo de acordo com cor
         {
             HashSet<Peca> aux = new HashSet<Peca>();
-            foreach (Peca peca in capturadas)
+            foreach (Peca x in pecas)
             {
-                if (peca.Cor == cor)
+                if (x.Cor == cor)
                 {
-                    aux.Add(peca);
+                    aux.Add(x);
                 }
-            }
-            aux.ExceptWith(pecasCapturadas(cor));// retira as pecas capturas
+            } 
+            aux.ExceptWith(pecasCapturadas(cor));// exceto pecas capturas
             return aux;
         }
 
+        private Cor adversaria(Cor cor)
+        {
+            if (cor == Cor.Branco)
+            {
+                return Cor.Preto;
+            }
+            else
+            {
+                return Cor.Branco;
+            }
+        }
+
+        private Peca rei(Cor cor)//quem é o rei de uma dada cor
+        {
+            foreach (Peca x in pecasEmJogo(cor))//Peca é superclasse e Rei é subclasse
+            {
+                //testando se uma variavel x do tipo Peca(superclasse) é uma instância de Rei(subclasse) 
+                if (x is Rei)// se x é uma instancia da classe Rei
+                {
+                    return x;
+                }                
+            }
+            return null;
+        }
+
+        public bool estaEmXeque(Cor cor)//verifica se o Rei esta em xeque
+        {
+            Peca R = rei(cor);//variavel tipo peca recebe um objeto tipo rei (upcasting)
+            if (R == null) //não deve acontecer
+            {
+                throw new TabuleiroException("Não tem rei da cor " + cor + " no tabuleiro!");
+            }
+            foreach (Peca x in pecasEmJogo(adversaria(cor)))
+            {
+                bool[,] mat = x.movimentosPossiveis();
+                if(mat[R.Posicao.Linha, R.Posicao.Coluna])
+                {
+                    return true;
+                }                
+            }
+            return false;
+        }
         public void colocarNovaPeca(char coluna, int linha, Peca peca)//dado uma coluna e linha e peca
         {
             //vai no tabuleiro da partida e coloca a peca
